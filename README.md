@@ -41,17 +41,18 @@ graph TB
     B --> J[html2pdf.js]
     J --> K[PDF Export]
 
-    style A fill:#e1f5fe
-    style B fill:#c8e6c9
-    style C fill:#fff3e0
-    style D fill:#fce4ec
-    style E fill:#f3e5f5
-    style G fill:#e8f5e8
-    style H fill:#fff8e1
-    style I fill:#fce4ec
-    style J fill:#e0f2f1
-    style K fill:#f9fbe7
+    style A color:#000,fill:#e1f5fe
+    style B color:#000,fill:#c8e6c9
+    style C color:#000,fill:#fff3e0
+    style D color:#000,fill:#fce4ec
+    style E color:#000,fill:#f3e5f5
+    style G color:#000,fill:#e8f5e8
+    style H color:#000,fill:#fff8e1
+    style I color:#000,fill:#fce4ec
+    style J color:#000,fill:#e0f2f1
+    style K color:#000,fill:#f9fbe7
 ```
+
 
 ### Componentes Arquitectónicos
 
