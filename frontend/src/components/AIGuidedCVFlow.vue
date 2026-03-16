@@ -419,6 +419,9 @@ const finalStructure = ref([]);
 const userMessage = ref('');
 const isAiLoading = ref(false);
 
+// Variable de entorno
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 // Margen dinámico basado en el CV seleccionado
 const marginValue = computed(() => {
   const standard = CV_STANDARDS[selectedCVType.value];
@@ -432,8 +435,7 @@ const marginValue = computed(() => {
 });
 const isSaving = ref(false);
 
-const cvContent = computed(() => cvStore.content);
-const isLoggedIn = computed(() => authStore.isLoggedIn);
+
 const metas = ['Beca', 'Trabajo', 'Maestría'];
 
 const fontSizeBase = ref(11); // Tamaño inicial
@@ -549,12 +551,18 @@ async function sendMessage() {
   // 2. CORRECCIÓN AQUÍ: Obtenemos el tipo y las specs correctamente
   // selectedCVType es el REF, lo pasamos a minúsculas para coincidir con las llaves
   const typeKey = selectedCVType.value?.toLowerCase() || 'harvard';
-  
+
+  const isFirstInteraction = cvStore.chatHistory.length <= 1;
+
   // Buscamos el estándar completo
   const standardObj = CV_STANDARDS[typeKey] || CV_STANDARDS.harvard;
 
   const payload = { 
-    prompt: currentInput,
+    prompt: isFirstInteraction 
+            ? `[INICIO DE CONVERSACIÓN] El usuario dice: "${currentInput}". 
+               Salúdalo con mucho carisma como por ejemplo: (Un gusto tenerte aquí, etc...), preséntate como Craft.ai 
+               y menciónale que estás listo para optimizar su CV con el estándar ${typeKey}.` 
+            : currentInput,
     objective: objective.value || 'Trabajo',
     targetJob: targetJob.value || 'Profesional',
     vacancyInfo: vacancyInfo.value || '',
@@ -566,7 +574,7 @@ async function sendMessage() {
 
   try {
     isAiLoading.value = true;
-    const response = await fetch('http://localhost:3000/api/cv/optimize', {
+    const response = await fetch(`${apiUrl}/api/cv/optimize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -684,7 +692,7 @@ async function saveCV(asNew = false) {
       chatHistory: cvStore.chatHistory 
     };
 
-    const response = await fetch('http://localhost:3000/api/cv/save', {
+    const response = await fetch(`${apiUrl}/api/cv/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

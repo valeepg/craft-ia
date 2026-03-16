@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue'; 
-
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const DEFAULT_SECTIONS = [
   { id: 'summary', label: 'Resumen' },
   { id: 'experience', label: 'Experiencia' },
@@ -118,7 +118,7 @@ export const useCvStore = defineStore('cv', () => {
       id: isNewVersion ? null : currentCvId.value 
     };
     
-    const res = await fetch('http://localhost:3000/api/cv/save', {
+    const res = await fetch(`${apiUrl}/api/cv/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
