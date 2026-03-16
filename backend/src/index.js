@@ -6,19 +6,20 @@ import { cvRoutes } from './routes/cv.routes.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Configuración de Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'https://craft-ia.vercel.app', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Aumentamos el límite a 1mb para soportar vacantes muy largas y JSONs pesados
 app.use(express.json({ limit: '1mb' })); 
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Rutas
+
 app.use('/api/cv', cvRoutes);
 
-// Manejador de errores global (evita que el servidor muera por errores no capturados)
+
 app.use((err, req, res, next) => {
   console.error('❌ Error no controlado:', err.stack);
   res.status(500).json({ 
@@ -27,6 +28,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor local en http://localhost:${PORT}`);
+  });
+}
+
+export default app; // <--- Vercel necesita esta exportación
