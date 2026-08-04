@@ -1,34 +1,36 @@
 import { cvService } from '../services/cv.service.js';
 import { geminiService } from '../services/gemini.service.js';
 
-// Extraer texto según tipo de archivo (buffer de Node.js)
-async function extractTextFromBuffer(buffer, mimetype, originalname) {
-  const name = (originalname || '').toLowerCase();
+// Procesar archivo según tipo (.pdf, .docx, .txt)
+async function processDocumentForGemini({ buffer, fileBase64, mimeType, fileName }) {
+  const name = (fileName || '').toLowerCase();
+  const type = (mimeType || '').toLowerCase();
 
-  if (mimetype === 'application/pdf' || name.endsWith('.pdf')) {
-    // Usar pdf-parse que es nativo para Node.js y no requiere polyfills del DOM
-    const pdfParse = (await import('pdf-parse')).default || await import('pdf-parse');
-    const pdfData = await pdfParse(buffer);
-    const text = (pdfData.text || '').trim();
-    
-    if (text.replace(/\s+/g, '').length < 50) {
-      return { text: '', warning: 'No se detectó texto en el PDF. Por favor, sube un documento con texto seleccionable o un archivo .docx' };
-    }
-    return { text: text.slice(0, 15000) };
+  if (type === 'application/pdf' || name.endsWith('.pdf')) {
+    // Para PDFs, Gemini 1.5 procesa directamente el archivo Base64 con su visión/OCR nativo (cero dependencias de DOM/Node)
+    return { isPdf: true, fileBase64, mimeType: 'application/pdf' };
 
   } else if (
-    mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     name.endsWith('.docx')
   ) {
     const mammoth = await import('mammoth');
     const result = await mammoth.extractRawText({ buffer });
-    return { text: (result.value || '').trim().slice(0, 15000) };
+    const text = (result.value || '').trim();
+    if (!text || text.length < 20) {
+      return { warning: 'No se detectó contenido de texto en el archivo Word (.docx).' };
+    }
+    return { isPdf: false, rawText: text.slice(0, 20000) };
 
-  } else if (mimetype === 'text/plain' || name.endsWith('.txt')) {
-    return { text: buffer.toString('utf-8').trim().slice(0, 15000) };
+  } else if (type === 'text/plain' || name.endsWith('.txt')) {
+    const text = buffer.toString('utf-8').trim();
+    if (!text || text.length < 20) {
+      return { warning: 'El archivo de texto (.txt) está vacío.' };
+    }
+    return { isPdf: false, rawText: text.slice(0, 20000) };
 
   } else {
-    return { text: '', warning: 'Formato no soportado. Por favor sube un archivo .pdf, .docx o .txt' };
+    return { warning: 'Formato no soportado. Por favor sube un archivo en formato .pdf, .docx o .txt' };
   }
 }
 
@@ -55,23 +57,32 @@ export const cvController = {
         return res.status(400).json({ error: 'Se requiere fileBase64 y fileName.' });
       }
 
-      // Convertir base64 a Buffer de Node.js
+      // Convertir base64 a Buffer para formatos que lo requieran (ej: docx)
       const buffer = Buffer.from(fileBase64, 'base64');
-      const result = await extractTextFromBuffer(buffer, mimeType || '', fileName);
+      const processed = await processDocumentForGemini({ buffer, fileBase64, mimeType, fileName });
 
-      if (result.warning) {
-        return res.status(400).json({ error: result.warning });
+      if (processed.warning) {
+        return res.status(400).json({ error: processed.warning });
       }
 
-      if (!result.text || result.text.trim().length === 0) {
-        return res.status(400).json({ error: 'No se pudo extraer texto del archivo.' });
+      let cvData;
+      if (processed.isPdf) {
+        // Enviar PDF directamente a Gemini como InlineData
+        cvData = await geminiService.parseCVDocument({
+          fileBase64: processed.fileBase64,
+          mimeType: processed.mimeType,
+          cvType: cvType || 'harvard',
+          targetJob: targetJob || ''
+        });
+      } else {
+        // Enviar texto extraído a Gemini
+        cvData = await geminiService.parseCVDocument({
+          rawText: processed.rawText,
+          cvType: cvType || 'harvard',
+          targetJob: targetJob || ''
+        });
       }
 
-      const cvData = await geminiService.parseCVText({ 
-        rawText: result.text, 
-        cvType: cvType || 'harvard', 
-        targetJob: targetJob || '' 
-      });
       res.json({ success: true, cvData });
     } catch (err) {
       console.error('Error en parseCV controller:', err);

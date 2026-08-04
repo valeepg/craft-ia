@@ -102,7 +102,7 @@ export const geminiService = {
   async optimizeCV({ prompt, objective, targetJob, vacancyInfo, cvType, history = [], fullSpecs, finalStructure }) {
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash", 
+        model: "gemini-2.5-flash", 
         generationConfig: { 
           responseMimeType: "application/json",
           temperature: 0.2 
@@ -134,7 +134,7 @@ export const geminiService = {
     }
   },
 
-  async parseCVText({ rawText, cvType = 'harvard', targetJob = '' }) {
+  async parseCVDocument({ rawText, fileBase64, mimeType = 'application/pdf', cvType = 'harvard', targetJob = '' }) {
     try {
       const schemaExample = {
         personalInfo: {
@@ -188,7 +188,7 @@ export const geminiService = {
       };
 
       const systemInstruction = `Eres un extractor experto de datos de hojas de vida (CVs). 
-Tu tarea es analizar el texto del CV del usuario y mapear TODA la información que encuentres al siguiente esquema JSON.
+Tu tarea es analizar el documento o texto del CV del usuario y extraer y estructurar TODA la información que encuentres mapeándola al siguiente esquema JSON.
 Devuelve ÚNICAMENTE el JSON, sin explicaciones, sin markdown, sin bloques de código. Solo el JSON puro.
 
 Estándar de CV destino: ${cvType.toUpperCase()}
@@ -206,7 +206,7 @@ Esquema JSON objetivo:
 ${JSON.stringify(schemaExample, null, 2)}`;
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.1
@@ -214,18 +214,36 @@ ${JSON.stringify(schemaExample, null, 2)}`;
         systemInstruction
       });
 
-      const result = await model.generateContent(rawText);
+      let contents = [];
+      if (fileBase64) {
+        // Enviar el PDF directamente a Gemini como inlineData (multimodal nativo de Gemini)
+        contents = [
+          {
+            inlineData: {
+              data: fileBase64,
+              mimeType: mimeType || 'application/pdf'
+            }
+          },
+          {
+            text: "Extrae y estructura toda la información de este currículum en el formato JSON especificado."
+          }
+        ];
+      } else {
+        contents = [rawText || ""];
+      }
+
+      const result = await model.generateContent(contents);
       const rawResponse = result.response.text();
       const cleanResponse = rawResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
 
       try {
         return JSON.parse(cleanResponse);
       } catch (parseError) {
-        console.error("Error parseando JSON de parseCVText:", rawResponse);
-        throw new Error("La IA no devolvió un JSON válido al parsear el CV.");
+        console.error("Error parseando JSON de parseCVDocument:", rawResponse);
+        throw new Error("La IA no devolvió un JSON válido al procesar el CV.");
       }
     } catch (error) {
-      console.error("Error en parseCVText:", error);
+      console.error("Error en parseCVDocument:", error);
       throw error;
     }
   }
