@@ -18,6 +18,7 @@ const routes = [
   },
   {
     path: '/dashboard',
+    alias: '/historial',
     name: 'Dashboard',
     component: () => import('@/components/Dashboard.vue'),
   }

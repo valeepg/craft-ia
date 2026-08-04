@@ -7,7 +7,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANO
 
 export const cvService = {
  
-  async optimizeWithGemini({ prompt, objective, targetJob, vacancyInfo, history, fullSpecs, finalStructure }) {
+  async optimizeWithGemini({ prompt, objective, targetJob, vacancyInfo, history, fullSpecs, finalStructure, cvType }) {
     return geminiService.optimizeCV({ 
       prompt, 
       objective, 
@@ -15,16 +15,12 @@ export const cvService = {
       vacancyInfo, 
       history, 
       fullSpecs, 
-      finalStructure 
+      finalStructure,
+      cvType
     });
   },
 
-  async smartUpdateWithGemini({ currentContent, newExperience, cvType }) {
-    return geminiService.smartUpdateCV({ currentContent, newExperience, cvType });
-  },
-
   async saveToSupabase({ userId, cvData, title, cvType, objectiveType, vacancyInfo, chatHistory, cvId = null }) {
-    // 1. Limpieza y preparación de datos
     const payload = {
       user_id: userId,
       content: cvData, 
@@ -34,33 +30,54 @@ export const cvService = {
       target_job: title,
       vacancy_info: vacancyInfo || '',
       chat_history: chatHistory || [],
-      updated_at: new Date().toISOString() // Auditoría básica
+      updated_at: new Date().toISOString()
     };
 
-    // 2. Lógica de "Upsert" (Actualizar si existe, insertar si es nuevo)
-    // Si pasas un cvId, actualiza ese registro específico.
-    const query = cvId 
-      ? supabase.from('cvs').update(payload).eq('id', cvId).eq('user_id', userId)
-      : supabase.from('cvs').insert(payload);
+    let query;
+    if (cvId) {
+      query = supabase.from('cvs').update(payload).eq('id', cvId).eq('user_id', userId).select().single();
+    } else {
+      query = supabase.from('cvs').insert(payload).select().single();
+    }
 
-    const { data, error } = await query.select().single();
+    let { data, error } = await query;
+
+    // Fallback a tabla 'resumes' si 'cvs' no existe
+    if (error && error.message.includes('relation "public.cvs" does not exist')) {
+      const resQuery = cvId 
+        ? supabase.from('resumes').update(payload).eq('id', cvId).eq('user_id', userId).select().single()
+        : supabase.from('resumes').insert(payload).select().single();
+      const resResult = await resQuery;
+      data = resResult.data;
+      error = resResult.error;
+    }
 
     if (error) {
       console.error("Error en Supabase Save:", error.message);
-      throw new Error(`Error al guardar el CV: ${error.message}`);
+      throw new Error(`Error al guardar el CV en Supabase: ${error.message}`);
     }
 
     return data;
   },
 
   async getUserHistory(userId) {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('cvs')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
+    if (error && error.message.includes('relation "public.cvs" does not exist')) {
+      const resResult = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      data = resResult.data;
+      error = resResult.error;
+    }
       
     if (error) throw error;
-    return data;
+    return data || [];
   }
 };

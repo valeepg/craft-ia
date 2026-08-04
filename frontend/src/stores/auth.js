@@ -6,7 +6,12 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
   const termsAccepted = ref(false);
 
+  // Estado global para Modales
+  const showLoginModal = ref(false);
+  const showRegisterModal = ref(false);
+
   const isLoggedIn = computed(() => !!user.value);
+
 
   async function init() {
     if (!supabase) return;
@@ -55,6 +60,8 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     termsAccepted,
     isLoggedIn,
+    showLoginModal,
+    showRegisterModal,
     init,
     signUpWithEmail,
     signInWithEmail,

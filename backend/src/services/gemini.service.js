@@ -5,117 +5,227 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const buildSystemInstruction = ({ objective, targetJob, vacancyInfo, fullSpecs, finalStructure }) => {
+const systemPromptsByStandard = {
+  harvard: "Genera el contenido en español usando un tono ejecutivo. Cero adjetivos informales. CADA viñeta de experiencia DEBE seguir la Fórmula XYZ de Google: 'Logré [X], medido por [Y], mediante [Z]'. No incluyas secciones de proyectos personales ni foto.",
+  tech: "Especialízate en roles de Software/Data. Resalta palabras clave técnicas, nombres de librerías y arquitectura. Transforma las tareas simples en logros técnicos cuantificables. Organiza el Stack Tecnológico obligatoriamente por categorías (Lenguajes, Frameworks, Cloud/Herramientas).",
+  europass: "Sigue el estándar oficial de la Unión Europea. Estructura las competencias en organizativas, digitales y de comunicación. Usa el Marco Común Europeo (A1-C2) para idiomas.",
+  creativo: "Usa un enfoque de storytelling profesional, destacando proyectos clave, roles creativos, portafolio e impacto visual."
+};
+
+const buildSystemInstruction = ({ objective, targetJob, vacancyInfo, fullSpecs, finalStructure, cvType }) => {
   const { title, specs, features } = fullSpecs;
+  const standardKey = (cvType || 'harvard').toLowerCase();
+  const specificStandardPrompt = systemPromptsByStandard[standardKey] || systemPromptsByStandard.harvard;
   
   // Generamos un esquema dinámico basado en los IDs reales del estándar elegido
   const dynamicSchema = {};
   finalStructure.forEach(s => {
-  if (s.id === 'personal') {
-    // Incluye enlaces dinámicos (GitHub, LinkedIn, Portfolio)
-    dynamicSchema.personalInfo = { 
-      fullName: "", 
-      email: "", 
-      phone: "", 
-      city: "", 
-      links: { github: "", linkedin: "", portfolio: "", website: "" },
-      title: "" // Ej: "Systems Engineer"
-    };
-  } else if (s.id === 'summary') {
-    // El "Perfil Profesional" generado por IA
-    dynamicSchema.summary = ""; 
-  } else if (s.id === 'education') {
-    dynamicSchema.education = [{ 
-      institution: "", 
-      degree: "", 
-      field: "", 
-      location: "", 
-      startDate: "", 
-      endDate: "", 
-      achievements: [] // Honores, promedios, premios
-    }];
-  } else if (s.id === 'experience' || s.id === 'projects' || s.id === 'trayectoria') {
-    dynamicSchema[s.id] = [{ 
-      title: "", // Cargo o nombre del proyecto
-      company: "", // Empresa o link de repositorio
-      location: "", 
-      startDate: "", 
-      endDate: "", 
-      current: false, 
-      description: [], // Los "Bullet Points" que optimizará la IA
-      technologies: [] // Stack usado específicamente aquí
-    }];
-  } else if (s.id === 'stack' || s.id === 'skills' || s.id === 'digital') {
-    // Categorización por niveles (Junior, Senior o escala 1-5)
-    dynamicSchema[s.id] = [{ category: "", items: [] }]; 
-  } else if (s.id === 'languages') {
-    // Esencial para Europass
-    dynamicSchema.languages = [{ language: "", level: "", certificate: "" }]; 
-  } else {
-    // Fallback para secciones personalizadas
-    dynamicSchema[s.id] = []; 
-  }
-});
+    if (s.id === 'personal') {
+      dynamicSchema.personalInfo = { 
+        fullName: "", 
+        email: "", 
+        phone: "", 
+        city: "", 
+        links: { github: "", linkedin: "", portfolio: "", website: "", behance: "" },
+        title: targetJob || ""
+      };
+    } else if (s.id === 'summary') {
+      dynamicSchema.summary = ""; 
+    } else if (s.id === 'education') {
+      dynamicSchema.education = [{ 
+        institution: "", 
+        degree: "", 
+        field: "", 
+        location: "", 
+        startDate: "", 
+        endDate: "", 
+        achievements: [] 
+      }];
+    } else if (s.id === 'experience' || s.id === 'projects' || s.id === 'trayectoria') {
+      dynamicSchema[s.id] = [{ 
+        title: "", 
+        company: "", 
+        location: "", 
+        startDate: "", 
+        endDate: "", 
+        current: false, 
+        description: [],
+        technologies: [] 
+      }];
+    } else if (s.id === 'stack' || s.id === 'skills' || s.id === 'digital') {
+      dynamicSchema[s.id] = [
+        { category: "Lenguajes de Programación", items: [] },
+        { category: "Frameworks y Librerías", items: [] },
+        { category: "Herramientas, Cloud & DevOps", items: [] },
+        { category: "Bases de Datos & Almacenamiento", items: [] }
+      ]; 
+    } else if (s.id === 'languages') {
+      dynamicSchema.languages = [{ language: "", level: "", certificate: "" }]; 
+    } else {
+      dynamicSchema[s.id] = []; 
+    }
+  });
 
-  return `Eres "Craft.ai", , la IA más carismática, experta y proactiva del mundo en creación de CVs así como un experto Senior en CVs tipo "${title}".
-  TU PERSONALIDAD (VITAL):
-  - Sé cálido y entusiasta.
-  - Usa frases cortas y motivadoras.
-  - Si el usuario está empezando, dile algo como: "¡Excelente! Hagamos que tu perfil brille."
-  - Nunca respondas solo con una pregunta técnica; primero valida lo que el usuario dijo con una frase positiva.
-  - No eres un formulario aburrido. Eres un Mentor Senior que quiere que el usuario consiga el trabajo de sus sueños.
-  - Usa un lenguaje motivador pero profesional. Ejemplo: "¡Hola! Qué gusto saludarte. Soy Craft.ai y estoy listo para que construyamos un CV que deje a los reclutadores sin palabras."
-  - Si el usuario solo dice "Hola", salúdalo con energía, explícale brevemente qué estándar elegiste (${title}) y lo que vas a necesitar de él para optimizar su CV.
-  - Siempre que respondas, hazlo con la intención de motivar al usuario a darte más información. No te conformes con respuestas cortas o vagas. Si el usuario dice "Trabajé en una startup", pregunta: "¡Genial! Para esa experiencia, ¿cuál era tu cargo? ¿Cómo se llamaba la empresa? ¿Cuándo empezaste y terminaste? ¿Cuáles fueron tus logros principales?".
-  
-  REGLAS TÉCNICAS DEL ESTÁNDAR:
-  - Margen: ${specs.margins} | Fuente: ${specs.font} | Tamaño: ${specs.fontSize}.
-  - Reglas de Estilo: ${features.join(', ')}.
-  - Orden Obligatorio: ${specs.order}.
+  return `Eres "Craft.ai", la IA mentora experta en ingeniería de CVs de alto impacto bajo el estándar "${title}".
 
-  COMPORTAMIENTO DE EXPERTO (ESTRICTO):
-  1. DETECTIVE DE DATOS: No puedes avanzar si falta información. Si el usuario menciona un trabajo, DEBES preguntar: Nombre de la empresa, Mes/Año inicio, Mes/Año fin (o si sigue ahí) y Logros. 
-  2. NADA EN BLANCO: Si una sección del estándar (${title}) está vacía, pregunta por ella. Ejemplo: "Para el perfil Tech, el Stack Tecnológico es vital, ¿qué lenguajes dominas?".
-  3. LINKS: Este estándar exige: ${specs.requiredLinks.join(', ')}. Si no los tienes, pídelos o sugiere crearlos.
-  4. REDACCIÓN: Transforma respuestas simples en frases de alto impacto. 
-     ${title.includes('Harvard') ? 'Usa la FÓRMULA XYZ: Logré [X] medido por [Y] haciendo [Z].' : ''}
+REGLA DE CONCISIÓN EN EL CHAT (ESTRICTA):
+Tus respuestas dentro de la burbuja de chat (messageToUser) DEBEN SER BREVES, DIRECTAS Y AMABLES (MÁXIMO 3 ORACIONES). 
+NO IMPRIMAS NUNCA EL DOCUMENTO COMPLETO EN EL CHAT. En su lugar, confirma en 1 o 2 oraciones breves los cambios realizados e inyecta la redacción completa optimizada directamente en el objeto JSON "updatedCVData".
 
-  RESPUESTA (JSON PURO):
-  {
-    "messageToUser": "Tu feedback o la pregunta específica de lo que falta",
-    "updatedCVData": ${JSON.stringify(dynamicSchema)},
-    "currentSection": "id_de_seccion",
-    "missingFields": ["lista_de_lo_que_falta_pedir"],
-    "isAllComplete": false
-  }`;
+INSTRUCCIÓN ESPECÍFICA DEL ESTÁNDAR (${title}):
+"${specificStandardPrompt}"
+
+OBJETIVO DEL PUESTO: "${targetJob || 'Profesional'}"
+DESCRIPCIÓN DE LA VACANTE: "${vacancyInfo || 'No especificada'}"
+TIPO DE OBJETIVO: "${objective || 'Trabajo'}"
+
+REGLAS DE ORO DE REDACCIÓN (ESTRICTAS Y OBLIGATORIAS):
+1. FÓRMULA XYZ DE GOOGLE EN CADA VIÑETA DE EXPERIENCIA Y PROYECTOS:
+   "Logré [X], medido por [Y], haciendo [Z]"
+   Ejemplo Correcto: "Optimicé el tiempo de respuesta en un 35% mediante la implementación de Redis en arquitectura Node.js."
+
+2. PROHIBIDO ADJETIVOS VACÍOS Y CLICHÉS ATS:
+   Queda TOTALMENTE PROHIBIDO usar palabras como: "proactivo", "organizado", "apasionado", "orientado a resultados", "responsable", "trabajador", "motivado".
+   Reemplázalas SIEMPRE por logros numéricos, porcentajes, métricas de negocio o decisiones técnicas cuantificables.
+
+RESPUESTA EN JSON PURO (SIN MARKDOWN EXTRA):
+{
+  "messageToUser": "Mensaje breve de máximo 3 oraciones confirmando el avance",
+  "updatedCVData": ${JSON.stringify(dynamicSchema)},
+  "currentSection": "seccion_actual",
+  "missingFields": ["campos_pendientes"],
+  "isAllComplete": false
+}`;
 };
 
 export const geminiService = {
-  async optimizeCV({ prompt, objective, targetJob, vacancyInfo, history = [], fullSpecs, finalStructure }) {
+  async optimizeCV({ prompt, objective, targetJob, vacancyInfo, cvType, history = [], fullSpecs, finalStructure }) {
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash", 
+        model: "gemini-1.5-flash", 
         generationConfig: { 
           responseMimeType: "application/json",
           temperature: 0.2 
         },
-        systemInstruction: buildSystemInstruction({ objective, targetJob, vacancyInfo, fullSpecs, finalStructure }),
+        systemInstruction: buildSystemInstruction({ objective, targetJob, vacancyInfo, fullSpecs, finalStructure, cvType }),
       });
 
       const chat = model.startChat({
         history: history.map(msg => ({
-          role: msg.sender === 'ai' ? 'model' : 'user',
+          role: msg.sender === 'ai' || msg.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: msg.text }],
         })),
       });
 
       const result = await chat.sendMessage(prompt);
-      const text = result.response.text().replace(/```json|```/g, "").trim();
+      const rawText = result.response.text();
+      const cleanText = rawText.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
       
-      return JSON.parse(text);
+      try {
+        return JSON.parse(cleanText);
+      } catch (parseError) {
+        console.error("Error parseando JSON de Gemini:", rawText);
+        throw new Error("La IA no devolvió un formato JSON válido.");
+      }
       
     } catch (error) {
       console.error("Error en geminiService:", error);
+      throw error;
+    }
+  },
+
+  async parseCVText({ rawText, cvType = 'harvard', targetJob = '' }) {
+    try {
+      const schemaExample = {
+        personalInfo: {
+          fullName: "",
+          email: "",
+          phone: "",
+          city: "",
+          title: "",
+          links: { linkedin: "", github: "", portfolio: "", website: "" },
+          photo: "",
+          skype: ""
+        },
+        summary: "",
+        experience: [{
+          title: "",
+          company: "",
+          location: "",
+          startDate: "",
+          startMonth: "",
+          startYear: "",
+          isCurrent: false,
+          endMonth: "",
+          endYear: "",
+          description: []
+        }],
+        education: [{
+          degree: "",
+          institution: "",
+          location: "",
+          startDate: "",
+          startMonth: "",
+          startYear: "",
+          isCurrent: false,
+          endMonth: "",
+          endYear: "",
+          description: []
+        }],
+        projects: [{
+          title: "",
+          company: "",
+          description: [],
+          technologies: []
+        }],
+        stack: [
+          { category: "Lenguajes de Programaci\u00f3n", items: [] },
+          { category: "Frameworks y Librer\u00edas", items: [] },
+          { category: "Herramientas, Cloud & DevOps", items: [] },
+          { category: "Bases de Datos & Almacenamiento", items: [] }
+        ],
+        languages: [{ language: "", level: "", certificate: "" }]
+      };
+
+      const systemInstruction = `Eres un extractor experto de datos de hojas de vida (CVs). 
+Tu tarea es analizar el texto del CV del usuario y mapear TODA la información que encuentres al siguiente esquema JSON.
+Devuelve ÚNICAMENTE el JSON, sin explicaciones, sin markdown, sin bloques de código. Solo el JSON puro.
+
+Estándar de CV destino: ${cvType.toUpperCase()}
+Puesto objetivo: ${targetJob || 'No especificado'}
+
+Reglas de mapeo:
+- Si encuentras fechas en el CV (ej: "Enero 2020 - Marzo 2023"), extrae el mes en startMonth/endMonth y el año en startYear/endYear.
+- Si el candidato sigue en el trabajo actual, pon isCurrent: true y deja endMonth/endYear vacíos.
+- Las viñetas de descripción de experiencia van en el array description[], una viñeta por elemento.
+- Agrupa las habilidades técnicas por categoría en stack[].
+- Para el campo startDate, combina startMonth + startYear (ej: "Enero 2020 - Presente" si isCurrent).
+- Si no encuentras información para un campo, déjalo como string vacío "" o array vacío [].
+
+Esquema JSON objetivo:
+${JSON.stringify(schemaExample, null, 2)}`;
+
+      const model = genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1
+        },
+        systemInstruction
+      });
+
+      const result = await model.generateContent(rawText);
+      const rawResponse = result.response.text();
+      const cleanResponse = rawResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+
+      try {
+        return JSON.parse(cleanResponse);
+      } catch (parseError) {
+        console.error("Error parseando JSON de parseCVText:", rawResponse);
+        throw new Error("La IA no devolvió un JSON válido al parsear el CV.");
+      }
+    } catch (error) {
+      console.error("Error en parseCVText:", error);
       throw error;
     }
   }

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue'; 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { apiService } from '@/services/api';
 const DEFAULT_SECTIONS = [
   { id: 'summary', label: 'Resumen' },
   { id: 'experience', label: 'Experiencia' },
@@ -19,9 +19,12 @@ const emptyDraft = () => ({
 
 export const useCvStore = defineStore('cv', () => {
 
-  const chatHistory = ref([]); // <-- Mueve el historial aquí
+  const chatHistory = ref([]);
   const currentStep = ref(1);
+  const currentCvId = ref(null);
+  
   // --- ESTADO ---
+  const objective = ref('Trabajo');
   const targetJob = ref('');
   const vacancyInfo = ref('');
   const cvType = ref('harvard');
@@ -29,6 +32,7 @@ export const useCvStore = defineStore('cv', () => {
   const draftContent = ref(emptyDraft());
   const content = ref({});
   const defaultSections = ref(DEFAULT_SECTIONS);
+  const customColor = ref('#1e293b');
 
   // --- COMPUTED ---
   const sections = computed(() =>
@@ -37,7 +41,7 @@ export const useCvStore = defineStore('cv', () => {
 
   // --- ACCIONES ---
   function setStructureOrder(order) {
-    structureOrder.value = Array.isArray(order) ? [...order] : [...defaultSections.value];
+    structureOrder.value = Array.isArray(order) && order.length ? [...order] : [...defaultSections.value];
   }
 
   // --- PERSISTENCIA LOCAL ---
@@ -46,26 +50,26 @@ export const useCvStore = defineStore('cv', () => {
     if (raw) {
       try {
         const data = JSON.parse(raw);
+        objective.value = data.objective || 'Trabajo';
         targetJob.value = data.targetJob || '';
         vacancyInfo.value = data.vacancyInfo || '';
         cvType.value = data.cvType || 'harvard';
         draftContent.value = data.draftContent || emptyDraft();
-        chatHistory.value = data.chatHistory || []; // Recuperar el chat
+        chatHistory.value = data.chatHistory || [];
         currentStep.value = data.currentStep || 1;
+        currentCvId.value = data.currentCvId || null;
         if (data.structureOrder) setStructureOrder(data.structureOrder);
         content.value = data.content || {};
       } catch (e) {
-        console.error("Error cargando cache local", e);
-        content.value = {};
+        console.error("Error cargando caché local del CV:", e);
       }
-    }else {
-      content.value = {}; // Si no hay nada en LS, inicializa vacío
     }
   }
 
-  // Auto-guardado en LocalStorage
-  watch([chatHistory, currentStep, targetJob, vacancyInfo, cvType, draftContent, structureOrder], () => {
+  // Auto-guardado transparente en LocalStorage
+  watch([chatHistory, currentStep, targetJob, vacancyInfo, cvType, draftContent, structureOrder, content, objective, currentCvId], () => {
     localStorage.setItem('cv_draft', JSON.stringify({
+      objective: objective.value,
       targetJob: targetJob.value,
       vacancyInfo: vacancyInfo.value,
       cvType: cvType.value,
@@ -73,7 +77,8 @@ export const useCvStore = defineStore('cv', () => {
       structureOrder: structureOrder.value,
       content: content.value,
       chatHistory: chatHistory.value,
-      currentStep: currentStep.value
+      currentStep: currentStep.value,
+      currentCvId: currentCvId.value
     }));
   }, { deep: true });
 
@@ -84,65 +89,60 @@ export const useCvStore = defineStore('cv', () => {
   }
 
   function setCvType(type) {
-    console.log("Cambiando estilo a:", type);
     cvType.value = type;
   }
 
   function loadFromSaved(cv) {
-    // Cargar datos desde un CV guardado
-    targetJob.value = cv.target_job || '';
+    // Cargar datos completos desde un CV guardado en Supabase
+    currentCvId.value = cv.id || null;
+    targetJob.value = cv.target_job || cv.title || '';
     vacancyInfo.value = cv.vacancy_info || '';
     cvType.value = cv.cv_type || 'harvard';
-    setStructureOrder(cv.structure_order || []);
+    objective.value = cv.objective_type || 'Trabajo';
+    if (cv.structure_order) setStructureOrder(cv.structure_order);
     content.value = cv.content || {};
     chatHistory.value = cv.chat_history || [];
-    currentStep.value = 1; // Empezar desde el paso 1 para permitir navegación hacia atrás
+    currentStep.value = 1; // Permite revisar o continuar desde el paso 1
   }
 
-  // --- LLAMADA AL BACKEND (Aquí es donde ocurre la magia) ---
-  async function saveToSupabase(userId) {
-    if (!userId) return;
+  async function saveToSupabase(userId, asNew = false) {
+    if (!userId) return null;
 
     const payload = {
       userId,
-      cvData: content.value, // Los datos optimizados por la IA
-      // Añadimos un timestamp al título para diferenciarlos si es nueva versión
-      title: isNewVersion 
-        ? `${targetJob.value} - Optimizado ${new Date().toLocaleDateString()}` 
-        : targetJob.value,
+      cvId: asNew ? null : currentCvId.value,
+      cvData: content.value,
+      title: targetJob.value || 'Mi CV Profesional',
       cvType: cvType.value,
-      objectiveType: 'trabajo', 
+      objectiveType: objective.value?.toLowerCase() || 'trabajo',
       vacancyInfo: vacancyInfo.value,
-      // Importante: Si mandas un 'id' nulo, Supabase creará uno nuevo (INSERT)
-      // Si mandas el 'id' del CV actual, lo actualizará (UPDATE)
-      id: isNewVersion ? null : currentCvId.value 
+      chatHistory: chatHistory.value
     };
     
-    const res = await fetch(`${apiUrl}/api/cv/save`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  
-    const result = await res.json();
-    if(result.id) currentCvId.value = result.id; // Guardamos el ID del CV actual
-    return result;
+    const result = await apiService.saveCV(payload);
+    const savedData = result.data || result;
+    if (savedData?.id) currentCvId.value = savedData.id;
+    return savedData;
   }
 
   return {
+    objective,
     targetJob,
     chatHistory,
     currentStep,
+    currentCvId,
     vacancyInfo,
     cvType,
     structureOrder,
     draftContent,
     content,
+    customColor,
     sections,
     init,
     setRole,
     setCvType,
     setStructureOrder,
+    loadFromSaved,
     saveToSupabase,
   };
 });

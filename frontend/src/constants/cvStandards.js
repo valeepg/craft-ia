@@ -2,109 +2,114 @@
 
 export const CV_STANDARDS = {
   harvard: {
-    title: "Harvard (Business School Style)",
-    subtitle: "Ideal para Finanzas, Consultoría y puestos Ejecutivos",
-    useCase: "Búsqueda de empleo en empresas Fortune 500, Banca o MBAs.",
+    title: "Harvard (Business / Corporate Style)",
+    subtitle: "Ideal para Finanzas, Consultoría, Dirección y puestos Ejecutivos",
+    useCase: "Empresas Fortune 500, Banca de Inversión, MBAs y selección ATS automatizada.",
     structure: [
       { id: 'personal', label: 'Datos de Contacto' },
-      { id: 'education', label: 'Educación' },
+      { id: 'summary', label: 'Resumen Ejecutivo' },
       { id: 'experience', label: 'Experiencia Profesional' },
-      { id: 'skills', label: 'Habilidades y Honores' }
+      { id: 'education', label: 'Educación y Certificaciones' },
+      { id: 'skills', label: 'Habilidades y Liderazgo' }
     ],
     specs: {
       margins: "2.54 cm",
       font: "Times New Roman",
       fontSize: "11 pt",
       maxPages: "1 página",
-      photo: "No permitida",
+      photo: "Sin Foto (ATS Ultra-Clean Monocromático)",
+      icons: "Sin iconos ni barras de nivel",
       requiredLinks: ["LinkedIn"],
-      order: "Nombre > Contacto > Educación > Experiencia > Habilidades"
+      order: "Contacto > Resumen > Experiencia > Educación > Habilidades"
     },
     features: [
-      "Optimizado para sistemas ATS",
-      "Uso de la Fórmula XYZ para logros",
-      "Diseño sobrio sin elementos gráficos",
-      "Enfoque en resultados cuantificables"
+      "100% Monocromático tradicional de máxima legibilidad ATS",
+      "Fórmula XYZ de Google obligatoria en cada logro cuantificable",
+      "Formato ejecutivo sobrio sin distracciones visuales",
+      "Optimizado para filtros automáticos de corporativos globales"
     ]
   },
   tech: {
     title: "Tech / Software Engineer",
-    subtitle: "Diseñado para Desarrolladores y Científicos de Datos",
-    useCase: "Startups, Big Tech y roles técnicos.",
+    subtitle: "Diseñado para Desarrolladores, Data Engineers y DevOps",
+    useCase: "Startups Tech, Big Tech (FAANG/MAMAA) y roles de Ingeniería.",
     structure: [
       { id: 'personal', label: 'Datos Personales' },
       { id: 'stack', label: 'Stack Tecnológico' },
       { id: 'experience', label: 'Experiencia Técnica' },
-      { id: 'projects', label: 'Proyectos y Repositorios' },
-      { id: 'education', label: 'Educación' }
+      { id: 'projects', label: 'Proyectos Destacados (GitHub/Demo)' },
+      { id: 'education', label: 'Educación y Certificaciones Tech' }
     ],
     specs: {
-      margins: "2.0 cm",
-      font: "Inter",
+      margins: "1.5 cm a 2.0 cm (Máximo aprovechamiento)",
+      font: "Inter / Roboto Mono",
       fontSize: "10 pt",
-      maxPages: "2 páginas",
-      photo: "No recomendada",
-      requiredLinks: ["GitHub", "LinkedIn", "Portafolio"],
-      order: "Nombre > Stack > Experiencia > Proyectos > Educación"
+      maxPages: "1 página (<8 años de experiencia)",
+      photo: "No permitida (Formato ATS)",
+      stackFormat: "Agrupado: Lenguajes | Frameworks/Librerías | Cloud/DB/DevOps",
+      requiredProjects: "Nombre del Proyecto | Tecnologías | Enlace (GitHub/Demo)",
+      requiredLinks: ["GitHub", "LinkedIn", "Portafolio Web"],
+      order: "Contacto > Stack Tecnológico > Experiencia > Proyectos > Educación"
     },
     features: [
-      "Segmentación por lenguajes y herramientas",
-      "Enlaces directos a código fuente",
-      "Resaltado de palabras clave técnicas",
-      "Estructura de escaneo rápido"
+      "Stack clasificado obligatoriamente por categorías técnicas",
+      "Proyectos estructurados con métricas y enlaces directos a código/demo",
+      "Máximo aprovechamiento de espacio en exactamente 1 página",
+      "Escaneo ultrarrápido para Tech Recruiters y parsers ATS"
     ]
   },
   creativo: {
     title: "Creativo / Portafolio",
-    subtitle: "Para Diseñadores, Marketing y Publicidad",
-    useCase: "Agencias creativas y estudios de diseño.",
+    subtitle: "Para Diseñadores UI/UX, Product Designers y Marketing Digital",
+    useCase: "Agencias creativas, estudios de diseño y startups de producto.",
     structure: [
-      { id: 'personal', label: 'Marca Personal' },
-      { id: 'summary', label: 'Perfil Creativo' },
-      { id: 'experience', label: 'Trayectoria' },
-      { id: 'projects', label: 'Galería de Proyectos' }
+      { id: 'personal', label: 'Marca Personal & Enlaces' },
+      { id: 'summary', label: 'Perfil Creativo / Bio' },
+      { id: 'projects', label: 'Portafolio & Casos de Estudio' },
+      { id: 'experience', label: 'Trayectoria Profesional' },
+      { id: 'skills', label: 'Herramientas de Diseño & UX' }
     ],
     specs: {
-      margins: "Variables",
-      font: "Montserrat",
+      margins: "1.8 cm",
+      font: "Montserrat / Outfit",
       fontSize: "10 pt",
-      maxPages: "2 páginas",
-      photo: "Opcional",
-      requiredLinks: ["Behance", "Instagram Pro", "Web Personal"],
-      order: "Marca Personal > Perfil > Experiencia > Proyectos"
+      maxPages: "1 a 2 páginas",
+      photo: "Opcional / Avatar profesional",
+      requiredLinks: ["Behance", "Dribbble", "Figma", "Portafolio Web"],
+      order: "Marca Personal > Perfil > Portafolio > Experiencia > Herramientas"
     },
     features: [
-      "Diseño visual con identidad propia",
-      "Infografías de niveles de software",
-      "Espacios para storytelling visual",
-      "Estética moderna y limpia"
+      "Enlaces destacados a Behance, Dribbble, Figma o Portafolio Web",
+      "Estructura visual enfocada en casos de estudio y entregables",
+      "Acento visual moderno manteniendo legibilidad impecable",
+      "Presentación atractiva de competencias UX/UI y herramientas"
     ]
   },
   europass: {
     title: "Europass (Estándar Europeo)",
-    subtitle: "Para Instituciones Públicas, Becas y Erasmus",
-    useCase: "Maestrías en Europa y organismos de la UE.",
+    subtitle: "Estructura Oficial para Becas, Erasmus y Sector Público Internacional",
+    useCase: "Maestrías en Europa, programa Erasmus+, Organizaciones Internacionales y Sector Público.",
     structure: [
       { id: 'personal', label: 'Información Personal' },
-      { id: 'experience', label: 'Experiencia Laboral' },
-      { id: 'education', label: 'Educación y Formación' },
-      { id: 'languages', label: 'Lenguas Extranjeras' },
-      { id: 'digital', label: 'Competencias Digitales' }
+      { id: 'education', label: 'Educación y Formación Académica' },
+      { id: 'experience', label: 'Experiencia Laboral y Voluntariado' },
+      { id: 'languages', label: 'Competencias Lingüísticas (CEFR)' },
+      { id: 'digital', label: 'Competencias Digitales e Investigación' }
     ],
     specs: {
       margins: "2.5 cm",
-      font: "Arial",
-      fontSize: "11 pt",
-      maxPages: "2 páginas",
-      photo: "Obligatoria",
-      requiredLinks: ["LinkedIn", "Skype ID"],
-      order: "Datos Personales > Experiencia > Educación > Competencias"
+      font: "Arial / Helvetica",
+      fontSize: "10.5 pt",
+      maxPages: "1 a 2 páginas",
+      photo: "Opcional según país de la UE",
+      requiredLinks: ["LinkedIn", "ORCID / Google Scholar"],
+      order: "Contacto > Educación > Experiencia > Idiomas (CEFR) > Competencias"
     },
     features: [
-      "Formato oficial reconocido en la UE",
-      "Marco Común para lenguas extranjeras",
-      "Sección de competencias organizativas",
-      "Tono académico y formal"
+      "Adaptado para convocatorias de becas internacionales y Erasmus",
+      "Evaluación estandarizada de idiomas según el Marco Común Europeo (CEFR)",
+      "Formato formal reconocido en toda la Unión Europea",
+      "Énfasis en trayectoria académica, reconocimientos y publicaciones"
     ]
   }
 };
