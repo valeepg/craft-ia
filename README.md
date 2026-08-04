@@ -3,84 +3,77 @@
 <div align="center">
   <img src="https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white" alt="Vue.js" />
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
   <img src="https://img.shields.io/badge/Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google Gemini" />
   <img src="https://img.shields.io/badge/Tailwind%20CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
 </div>
 
 <br />
 
-**Craft.IA** es una aplicación revolucionaria que transforma la creación de currículums en una experiencia estratégica y personalizada. Utilizando inteligencia artificial avanzada (Google Gemini), guía al usuario paso a paso para construir perfiles profesionales optimizados bajo estándares internacionales como Harvard, ATS y Europass, con exportación precisa a PDF de alta calidad.
-
-## ✨ Características Principales
-
-- 🎯 **Optimización ATS**: CVs diseñados para superar filtros automáticos de reclutamiento
-- 🤖 **IA Interactiva**: Chat en tiempo real con un "experto en reclutamiento" virtual
-- 📱 **Interfaz Moderna**: UI/UX con Glassmorphism, animaciones y diseño responsive
-- 🔒 **Autenticación Segura**: Gestión de usuarios con Supabase
-- 📄 **Exportación Profesional**: PDFs de calidad imprenta con márgenes precisos
-- 💾 **Historial de Versiones**: Guarda y edita múltiples versiones de tu CV
+**Craft.IA** es una aplicación revolucionaria que transforma la creación de currículums en una experiencia estratégica y personalizada. Utilizando inteligencia artificial avanzada (Google Gemini), guía al usuario paso a paso para construir perfiles profesionales optimizados bajo estándares internacionales (Harvard, ATS y Europass), con auto-completado mágico a partir de tu CV actual y exportación precisa a PDF de alta calidad.
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## ✨ Características Principales
+
+- 🎯 **Optimización ATS**: CVs diseñados específicamente para superar filtros automáticos de reclutamiento (Applicant Tracking Systems).
+- 🪄 **Importación Mágica de CV**: Sube tu currículum actual en formato PDF o Word y la IA extraerá y categorizará toda tu información para auto-rellenar el formulario en segundos.
+- 🤖 **IA Interactiva (Career Coach)**: Un asistente virtual en tiempo real que mejora tu redacción, optimiza la semántica y adapta tu experiencia al puesto que buscas.
+- 📱 **Interfaz Premium & Dinámica**: UI/UX fluida con Glassmorphism, animaciones sofisticadas, y transiciones sin recargas.
+- 👥 **Modo Invitado & Cuentas de Usuario**: Empieza inmediatamente sin barreras o regístrate (vía Supabase Auth) para guardar y sincronizar tu información en la nube.
+- 📄 **Exportación Profesional**: Creación de archivos PDF A4 de calidad imprenta con márgenes perfectos y estructura tipográfica impecable.
+
+---
+
+## 🏗️ Arquitectura del Sistema (Serverless)
+
+El proyecto está diseñado para funcionar de manera óptima y escalable en entornos Serverless como Vercel, dividiendo la aplicación en un Frontend reactivo y una API Backend ligera.
 
 ### Diagrama de Arquitectura
 
 ```mermaid
 graph TB
-    A[Usuario] --> B[Frontend Vue.js]
-    B --> C[Pinia Store]
-    B --> D[Supabase Auth]
-    B --> E[Google Gemini API]
-    C --> F[LocalStorage]
-    C --> D
-    D --> G[Base de Datos Supabase]
-    E --> H[Backend Node.js]
-    H --> I[Gemini Service]
-    B --> J[html2pdf.js]
-    J --> K[PDF Export]
+    A[Usuario] --> B[Frontend Vue.js / Vercel]
+    B --> C[Pinia Store (Estado local)]
+    B --> D[Supabase Auth & DB]
+    
+    B -- Envío de PDF / Peticiones --> H[Backend Node.js / Vercel API]
+    H --> I[pdf-parse / mammoth (Extracción de texto)]
+    H --> J[Google Gemini 1.5 API]
+    J -- JSON estructurado --> H
+    H -- Respuesta optimizada --> B
+    
+    B --> K[html2pdf.js]
+    K --> L[PDF Export (A4)]
 
     style A color:#000,fill:#e1f5fe
     style B color:#000,fill:#c8e6c9
     style C color:#000,fill:#fff3e0
     style D color:#000,fill:#fce4ec
-    style E color:#000,fill:#f3e5f5
-    style G color:#000,fill:#e8f5e8
     style H color:#000,fill:#fff8e1
-    style I color:#000,fill:#fce4ec
-    style J color:#000,fill:#e0f2f1
-    style K color:#000,fill:#f9fbe7
+    style I color:#000,fill:#e0f2f1
+    style J color:#000,fill:#f3e5f5
+    style K color:#000,fill:#e8f5e8
+    style L color:#000,fill:#f9fbe7
 ```
-
 
 ### Componentes Arquitectónicos
 
-- **Frontend (Vue.js + Vite)**: Interfaz de usuario reactiva con Composition API
-- **Estado Global (Pinia)**: Gestión centralizada de datos del CV y chat
-- **Backend (Node.js + Express)**: API REST para integración con Gemini
-- **Base de Datos (Supabase)**: PostgreSQL con autenticación y RLS
-- **IA Engine (Google Gemini)**: Procesamiento de lenguaje natural y optimización de contenido
-- **Exportación (html2pdf.js)**: Conversión de HTML a PDF con alta fidelidad
-
-### Flujo de Datos
-
-1. **Creación**: Usuario ingresa datos → IA optimiza contenido → Almacenamiento local
-2. **Interacción**: Chat con IA → Actualización en tiempo real del CV
-3. **Persistencia**: Guardado en Supabase → Historial de versiones
-4. **Exportación**: Renderizado HTML → Conversión a PDF → Descarga
+- **Frontend (Vue 3 + Vite)**: SPA (Single Page Application) construida con Composition API. Alojada de forma estática en Vercel.
+- **Backend (Node.js + Express)**: Actúa como pasarela API (Serverless Functions en Vercel) para proteger las llaves de IA y procesar cargas pesadas de archivos (PDF/Word) utilizando `pdf-parse` (compatible nativamente con entornos sin DOM).
+- **Base de Datos (Supabase)**: PostgreSQL con sistema completo de autenticación (Auth) y Políticas de Seguridad a Nivel de Fila (RLS) para proteger los currículums.
+- **Inteligencia Artificial (Gemini 1.5 Pro)**: Generación estructurada de datos (JSON) para mapeo exacto de la información del usuario a las secciones del CV.
 
 ---
 
 ## 🛠️ Instalación y Configuración Local
 
 ### Prerrequisitos
-
-- **Node.js** >= 18.0.0
-- **npm** >= 8.0.0
-- **Git**
-- Cuenta de **Google AI Studio** (para Gemini API)
-- Cuenta de **Supabase** (para base de datos)
+- **Node.js** >= 18.0.0 (Recomendado 20.x)
+- Cuenta de **Google AI Studio** (API Key)
+- Cuenta de **Supabase** (Proyecto activo)
 
 ### 1. Clonar el Repositorio
 
@@ -96,18 +89,11 @@ cd backend
 npm install
 ```
 
-Crear archivo `.env` en `backend/`:
-
+Crea un archivo `.env` en la carpeta `backend/`:
 ```env
-# Puerto del servidor
 PORT=3000
-
-# Google Gemini API Key
 GEMINI_API_KEY=tu_clave_de_gemini_aqui
-
-# Supabase Configuration
-SUPABASE_URL=https://tu-proyecto.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_aqui
+FRONTEND_URL=http://localhost:5173
 ```
 
 ### 3. Configurar el Frontend
@@ -117,129 +103,82 @@ cd ../frontend
 npm install
 ```
 
-Crear archivo `.env` en `frontend/`:
-
+Crea un archivo `.env` en la carpeta `frontend/`:
 ```env
-# Google Gemini API Key (para desarrollo local)
-VITE_GEMINI_API_KEY=tu_clave_de_gemini_aqui
-
-# Supabase Configuration
+VITE_API_URL=http://localhost:3000/api
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key_aqui
 ```
 
-### 4. Configurar la Base de Datos
+### 4. Ejecutar la Aplicación en Desarrollo
 
-Ejecutar las migraciones de Supabase:
-
-```bash
-cd ../supabase
-npx supabase db push
-```
-
-O aplicar manualmente los archivos SQL en `supabase/migrations/`.
-
-### 5. Ejecutar la Aplicación
+Inicia ambos servidores en pestañas separadas de tu terminal:
 
 **Backend:**
 ```bash
 cd backend
 npm run dev
+# Correrá en http://localhost:3000
 ```
 
 **Frontend:**
 ```bash
 cd frontend
 npm run dev
-```
-
-Acceder a `http://localhost:5173` para el frontend y `http://localhost:3000` para la API.
-
-### 6. Configuración de Producción
-
-Para despliegue en Vercel/Netlify:
-
-1. Configurar variables de entorno en el dashboard
-2. Crear `vercel.json`:
-```json
-{
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
+# Correrá en http://localhost:5173
 ```
 
 ---
+
+## 🚀 Despliegue en Producción (Vercel)
+
+El proyecto está preparado para un despliegue directo usando Vercel CLI:
+
+1. Despliega el **Backend** primero:
+   ```bash
+   cd backend
+   npx vercel deploy --prod
+   ```
+   *Asegúrate de agregar `GEMINI_API_KEY` en las variables de entorno de este proyecto en Vercel.*
+
+2. Toma la URL resultante del backend (ej. `https://craft-ia-backend.vercel.app`) y agrégala al `.env` de tu frontend o configúrala en el Dashboard de Vercel para el proyecto Frontend como `VITE_API_URL`.
+
+3. Despliega el **Frontend**:
+   ```bash
+   cd frontend
+   npx vercel deploy --prod
+   ```
+
+---
+
 ## 🤖 Inteligencia Artificial: El Motor de Craft.IA
 
-### 🛠️ Desarrollo Potenciado por IA (AI-Pair Programming)
+La integración con Google Gemini no es un simple chat; es un sistema orquestado que funciona como el núcleo de lógica de negocios:
 
-Este proyecto no solo implementa IA, fue construido **en simbiosis** con ella, utilizando un flujo de trabajo de próxima generación:
-
-* **Cursor IDE & Composer**: Pieza clave en la arquitectura. Se utilizó para la refactorización de lógica compleja en Pinia y la generación de componentes reactivos con una velocidad 3x superior al desarrollo tradicional.
-* **Prompt Engineering de Precisión**: Diseño de prompts sistémicos para que Gemini respete estrictamente los márgenes A4 y las reglas de parseo de los sistemas ATS (Applicant Tracking Systems).
-* **Debugging Evolutivo**: Uso de Gemini para el análisis de trazas de error en tiempo real y la optimización de la performance del renderizado del PDF.
-
-### 🧠 Funcionalidades de IA en la Aplicación
-
-La IA de Craft.IA actúa como un **Career Coach** activo, no como una simple plantilla:
-
-1.  **Análisis de Intención Profesional**: Al inicio, la IA detecta si tu objetivo es académico (maestría/beca) o corporativo, ajustando el lenguaje técnico y el tono automáticamente.
-2.  **Optimización Semántica ATS**: Transforma descripciones planas en logros cuantificables (utilizando el método Google XYZ) para maximizar la lectura por algoritmos de reclutamiento.
-3.  **Copiloto de Edición (Chat)**: Un chat persistente permite refinar secciones mediante lenguaje natural. Ejemplo: *"Haz que mi experiencia en ventas suene más orientada a datos"*.
+1.  **Parseo Inteligente (Importar CV)**: En lugar de expresiones regulares propensas a fallos, el backend extrae el texto en crudo (usando `pdf-parse` o `mammoth`) y Gemini lo clasifica mágicamente en el modelo JSON de la aplicación (Experiencia, Educación, Skills).
+2.  **Optimización Semántica (Método Google XYZ)**: Transforma automáticamente funciones planas ("Hice ventas") en logros cuantificables ("Incrementé las ventas en un 15% mediante...").
+3.  **Chat Iterativo**: Un copiloto constante en la interfaz de creación permite alterar descripciones sobre la marcha usando lenguaje natural (*"Haz que este párrafo suene más orientado a liderazgo"*).
 
 ---
 
-## 💾 El Diferencial: Persistencia Inteligente
+## 💾 Persistencia Inteligente (Supabase)
 
-A diferencia de otros generadores, Craft.IA ofrece un **Ecosistema de Carrera** mediante el registro de usuario:
+Craft.IA trasciende la típica "plantilla de CV web" gracias a su ecosistema de cuentas:
 
-* **Biblioteca de CVs Dinámica**: Los usuarios registrados pueden guardar múltiples versiones de su CV en la nube (vía Supabase).
-* **Modificación Evolutiva**: No empiezas de cero. Puedes tomar un CV guardado hace meses y pedirle a la IA: *"Actualízalo con mi nuevo proyecto de Vue.js"* o *"Adáptalo para esta nueva oferta de trabajo de Senior Dev"*.
-* **Sincronización Total**: Tu progreso se guarda automáticamente, permitiendo empezar el CV en el móvil y terminar los detalles finos en la PC.
-
----
-
-## 🚀 Hoja de Ruta (Roadmap)
-
-### 🎯 Fase 1: Gestión Avanzada (Próximamente)
-- **💾 Repositorio Personal de CVs**: Guardar Cvs y generarlos a partir de antiguos Cvs.
-- **📊 Tracking de Aplicaciones**: Panel para marcar a qué empresas enviaste cada versión de tu CV.
-- **🔄 Rollback de Versiones**: Historial de cambios para volver a una versión anterior del texto generada por la IA.
-- **🌐 Localización Inteligente**: Traducción técnica de CVs (ej. de Español a Inglés técnico) manteniendo la coherencia profesional.
-
-### 💡 Fase 2: UX & Customización
-- **🎨 Constructor Visual Drag & Drop**: Reordenar secciones físicamente con `vuedraggable`.
-- **🌙 Sistema de Temas**: Modo oscuro nativo y paletas de colores profesionales preconfiguradas.
-- **✨ Micro-interacciones**: Feedback visual mediante animaciones fluidas para una experiencia Premium.
-
-### 💼 Modelo de Negocio (Monetización)
-- **Plan Starter (Gratis)**: 1 CV activo, estándares básicos y descargas limitadas.
-- **Plan Pro (Suscripción)**: Historial ilimitado de CVs, Chat de IA ilimitado y descarga de plantillas exclusivas.
-- **Plan Enterprise**: Solución para agencias de *outplacement* o universidades.
+* **Modos Híbridos**: El usuario puede usar la plataforma como invitado (almacenamiento temporal en LocalStorage) o iniciar sesión en cualquier momento (Modales globales) sin perder el progreso.
+* **Sincronización en la Nube**: Tras iniciar sesión, todo se unifica con Supabase. Puedes empezar tu CV en el móvil y finalizar su exportación en la computadora.
 
 ---
 
-## 📝 Guía de Uso
+## 🌟 Roadmap a Futuro
 
-1. **Registro/Login**: Crea una cuenta o inicia sesión, o simplemente como invitado.
-2.  **Definición de Meta**: Indica tu objetivo (Trabajo, Beca, etc.) además de ingresar la descripción del puesto o beca, etc para que la IA configure el contexto.
-3.  **Selección de Estándar**: Elige Harvard, Creativo, Europass, etc.
-4.  **Construcción Guiada**: Completa tus datos mientras la IA sugiere mejoras en tiempo real.
-5.  **Refinamiento mediante Chat**: Usa el asistente para pulir logros o resumir experiencias extensas.
-6.  **Exportación**: Obtén un PDF optimizado y listo para enviar.
+- [ ] **Constructor Visual (Drag & Drop)**: Permitir reordenar visualmente las secciones del CV (Experiencia antes que Educación, etc.) utilizando `vuedraggable`.
+- [ ] **Sistema de Temas Premium**: Adición de colores corporativos adaptados al perfil visual (Banking Blue, Creative Coral, etc).
+- [ ] **Multi-idioma (i18n) Automático**: Traducir un CV completo (Ej: de Español a Inglés Técnico) manteniendo su formato y semántica profesional mediante IA.
+- [ ] **Tracking de Versiones (Rollback)**: Sistema git-like para ver los cambios realizados por la IA y revertirlos si no son del agrado del usuario.
 
----
-
-## 🤝 Contribución
-
-¡Las contribuciones son bienvenidas! Por favor:
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
 ---
 
 <div align="center">
-  Desarrollado con ❤️ utilizando Vue 3, Gemini AI y Cursor
+  Desarrollado con ❤️ utilizando Vue 3, Gemini AI y Node.js.
 </div>

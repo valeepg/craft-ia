@@ -6,18 +6,11 @@ async function extractTextFromBuffer(buffer, mimetype, originalname) {
   const name = (originalname || '').toLowerCase();
 
   if (mimetype === 'application/pdf' || name.endsWith('.pdf')) {
-    // pdfjs-dist legacy: funciona en Node.js sin CDN ni workers externos
-    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    pdfjs.GlobalWorkerOptions.workerSrc = '';
-    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer) });
-    const pdf = await loadingTask.promise;
-    let fullText = '';
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      fullText += textContent.items.map(item => item.str).join(' ') + '\n';
-    }
-    const text = fullText.trim();
+    // Usar pdf-parse que es nativo para Node.js y no requiere polyfills del DOM
+    const pdfParse = (await import('pdf-parse')).default || await import('pdf-parse');
+    const pdfData = await pdfParse(buffer);
+    const text = (pdfData.text || '').trim();
+    
     if (text.replace(/\s+/g, '').length < 50) {
       return { text: '', warning: 'No se detectó texto en el PDF. Por favor, sube un documento con texto seleccionable o un archivo .docx' };
     }
